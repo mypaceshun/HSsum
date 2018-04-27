@@ -1,0 +1,22 @@
+{# login.html #}
+{% extends "layout.html" %}
+{% block body %}
+<div id="loading">
+  <img src={{ url_for('static', filename='img/loading.gif') }} width="100" height="100" class="img-responsive" />
+  <p>処理中です</p>
+</div>
+<div id="content">
+<h1>集計に必要な情報を入れてください</h1>
+<form method="POST" action={{ url_for('charaani_result') }}>
+  <div class="form-group">
+    <label>ユーザーID</label>
+    <input type="text" name="username" required></input>
+  </div>
+  <div class="form-group">
+    <label>パスワード</label>
+    <input type="password" name="password" required></input>
+  </div>
+  <button type="submit" class="btn btn-primary" onclick="loading();">集計開始</button>
+</form>
+</div>
+{% endblock %}

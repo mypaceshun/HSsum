@@ -1,0 +1,28 @@
+{# result.html #}
+{% extends "layout.html" %}
+{% block body %}
+<h1>{{ username }} さん</h1>
+<div class="table-responsive">
+<table class="table table-bordered table-striped" style="font-size: 200%;">
+  <tr>
+    <th>ID</th>
+    <th>日程</th>
+    <th>メンバー</th>
+    <th>部</th>
+    <th>枚数</th>
+    <th>状態</th>
+  </tr>
+  {% for record in records %}
+  <tr>
+    <td>{{ record.id }}</td>
+    <td>{{ record.date }}</td>
+    <td>{{ record.member }}</td>
+    <td>{{ record.bu }}</td>
+    <td>{{ record.num }}</td>
+    <td>{{ record.state }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
+{% endblock %}
