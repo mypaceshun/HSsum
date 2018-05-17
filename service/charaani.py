@@ -1,7 +1,10 @@
 from logging import getLogger
 
 import requests
+import pandas as pd
+import copy
 from bs4 import BeautifulSoup
+from pprint import pprint 
 
 
 try:
@@ -63,7 +66,7 @@ class Charaani:
         res = self.s.get(self.urls['history'], cookies=self.cookies)
         records = self._scrape_recods(res.text)
         self.cookies = res.cookies
-        while page <= 3:
+        while page <= maxpage:
             page = page + 1
             postdata = self._find_hidden(res.text)
             postdata['__EVENTARGUMENT'] = 'Page$%s' % page
@@ -71,7 +74,7 @@ class Charaani:
             res = self.s.post(self.urls['history'],
                               cookies=self.cookies,
                               data=postdata)
-            records = records + self._scrape_recods(res.text)
+            records = self._marge_records(records, self._scrape_recods(res.text))
 
         return records
 
@@ -79,26 +82,52 @@ class Charaani:
         soup = BeautifulSoup(html, "html.parser")
         history_table_el = soup.find("table", attrs={"class", "history_table"})
         cols = history_table_el.find_all("tr")
-        records = []
+        records = {}
         for col in cols:
             if col.get("class") is not None:
                 continue
             rows = col.find_all("td")
             if len(rows) != 8:
                 continue
-            record = {
-                    "id": rows[1].text,
-                    "num": rows[4].text,
-                    "state": rows[6].text,
-                    }
-            row2 = rows[2].text.split(" ")
-            record['date'] = row2[0]
-            record['member'] = row2[1]
-            record['bu'] = row2[2]
-            print(record)
-            records.append(record)
-        print(records)
+            id_str = rows[1].text
+            state = rows[6].text
+            if state == '当選':
+                key = id_str + 'A'
+            elif state == '落選':
+                key = id_str + 'B'
+            elif state == '抽選中':
+                key = id_str + 'C'
+            else:
+                key = id_str + 'D'
+
+            num = int((rows[4].text)[:-1])
+            if key in records.keys():
+                records[key]['num'] = records[key]['num'] + num
+            else:
+                row2 = rows[2].text.split(" ")
+                records[key] = {
+                        'id': id_str,
+                        'state': rows[6].text,
+                        'date': row2[0],
+                        'member': row2[1],
+                        'bu': row2[2],
+                        'num': num
+                        }
+        pprint(records)
         return records
+
+    def _marge_records(self, recordsA, recordsB):
+        new_records = copy.deepcopy(recordsA)
+        new_records.update(recordsB)
+        # ひとまず結合するが、重複する要素は上書きされてしまった
+        # そのため、重複する要素のみ再計算して代入しなおす
+        for key in recordsA.keys():
+            if key in recordsB.keys():
+                numA = recordsA[key]['num']
+                numB = recordsB[key]['num']
+                new_records[key]['num'] = numA + numB
+
+        return new_records
 
     def _find_hidden(self, html):
         soup = BeautifulSoup(html, "html.parser")
